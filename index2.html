@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HACKER CHAT - Secure Terminal</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: #000;
+            color: #00ff00;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Matrix Rain Background */
+        .matrix-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .matrix-rain {
+            position: absolute;
+            color: #0f0;
+            font-size: 16px;
+            line-height: 16px;
+            text-shadow: 0 0 8px #0f0, 0 0 12px #0f0;
+            animation: matrix-fall 3s linear infinite;
+            opacity: 0.7;
+        }
+
+        @keyframes matrix-fall {
+            0% { transform: translateY(-100vh); opacity: 1; }
+            100% { transform: translateY(100vh); opacity: 0; }
+        }
+
+        /* Main Container */
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(3px);
+            position: relative;
+            z-index: 2;
+            min-height: 0; /* Add this */
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(90deg, #000, #0a0a0a, #000);
+            border-bottom: 2px solid #00ff00;
+            padding: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.3), transparent);
+            animation: scan-line 3s infinite;
+        }
+
+        @keyframes scan-line {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .title {
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 0 0 10px #00ff00;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { text-shadow: 0 0 10px #00ff00; }
+            to { text-shadow: 0 0 20px #00ff00, 0 0 30px #00ff00; }
+        }
+
+        .subtitle {
+            font-size: 0.9em;
+            color: #0a0;
+            margin-top: 5px;
+        }
+
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 20px;
+            min-height: 0; /* Add this */
+        }
+
+        .chat-area {
+            flex: 1;
+            background: rgba(0, 20, 0, 0.3);
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+            min-height: 0; /* Add this */
+            max-height: 100%; /* Add this */
+        }
+
+        .chat-area::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-area::-webkit-scrollbar-track {
+            background: #000;
+        }
+
+        .chat-area::-webkit-scrollbar-thumb {
+            background: #00ff00;
+            border-radius: 4px;
+        }
+
+        /* Messages */
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            animation: message-fade-in 0.5s ease-in;
+        }
+
+        @keyframes message-fade-in {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.sent {
+            background: rgba(0, 255, 0, 0.1);
+            border-left: 3px solid #00ff00;
+            margin-left: 20%;
+        }
+
+        .message.received {
+            background: rgba(0, 100, 0, 0.1);
+            border-left: 3px solid #0a0;
+            margin-right: 20%;
+        }
+
+        .message-header {
+            font-size: 0.8em;
+            color: #0a0;
+            margin-bottom: 5px;
+        }
+
+        .message-content {
+            font-size: 1em;
+            line-height: 1.4;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 10px;
+            color: #0a0;
+            font-style: italic;
+        }
+
+        .typing-dots {
+            display: inline-block;
+            animation: typing 1.4s infinite;
+        }
+
+        @keyframes typing {
+            0%, 20% { content: "."; }
+            40% { content: ".."; }
+            60%, 100% { content: "..."; }
+        }
+
+        /* Input Area */
+        .input-area {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: rgba(0, 20, 0, 0.3);
+            border: 1px solid #00ff00;
+            border-radius: 5px;
+            padding: 15px;
+        }
+
+        .message-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            outline: none;
+            padding: 10px;
+        }
+
+        .message-input::placeholder {
+            color: #0a0;
+        }
+
+        .send-btn {
+            background: linear-gradient(45deg, #000, #0a0a0a);
+            border: 1px solid #00ff00;
+            color: #00ff00;
+            padding: 10px 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .send-btn:hover {
+            background: linear-gradient(45deg, #0a0a0a, #000);
+            box-shadow: 0 0 10px #00ff00;
+            transform: scale(1.05);
+        }
+
+        .send-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Status Bar */
+        .status-bar {
+            background: linear-gradient(90deg, #000, #0a0a0a);
+            border-top: 1px solid #00ff00;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8em;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #00ff00;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Terminal Effects */
+        .terminal-cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: #00ff00;
+            animation: blink 1s infinite;
+            margin-left: 2px;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 1.8em;
+            }
+            
+            .chat-container {
+                padding: 10px;
+            }
+            
+            .message.sent {
+                margin-left: 10%;
+            }
+            
+            .message.received {
+                margin-right: 10%;
+            }
+        }
+
+        /* Intro Overlay */
+        .intro-overlay {
+            position: fixed;
+            z-index: 9999;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.98);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            transition: opacity 1s ease;
+            opacity: 1;
+            pointer-events: all;
+        }
+        .intro-overlay.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .intro-content {
+            text-align: center;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            text-shadow: 0 0 10px #00ff00, 0 0 20px #0f0;
+            animation: intro-glow 2s infinite alternate;
+        }
+        @keyframes intro-glow {
+            from { text-shadow: 0 0 10px #00ff00; }
+            to { text-shadow: 0 0 30px #00ff00, 0 0 40px #0f0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="matrix-bg" id="matrixBg"></div>
+
+    <div class="intro-overlay" id="introOverlay">
+        <div class="intro-content">
+            <h1>WELCOME TO GHOST SYNTAX</h1>
+            <p>Initializing Secure Terminal...</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="title">GHOST SYNTAX</div>
+            <div class="subtitle">SECURE TERMINAL v2.0.1</div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-area" id="chatArea">
+                </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <span class="status-indicator"></span>
+                Someone is typing<span class="typing-dots"></span>
+            </div>
+
+            <div class="input-area">
+                <input type="text" class="message-input" id="messageInput" placeholder="Enter your message..." maxlength="500">
+                <button class="send-btn" id="sendBtn">SEND</button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div>
+                <span class="status-indicator"></span>
+                <span>CONNECTED</span>
+            </div>
+            <div>
+                <span>ENCRYPTED</span>
+                <span class="terminal-cursor"></span>
+            </div>
+            <div>
+                <span id="timestamp"></span>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+      // Import the functions you need from the SDKs you need
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+      import { getDatabase, ref, onValue, push, serverTimestamp, set } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-database.js";
+
+      // Your web app's Firebase configuration
+      const firebaseConfig = {
+        apiKey: "AIzaSyDwc9uQLsNFdME81E6jXIQ6j2Fe0RYcRNQ",
+        authDomain: "ghostsyntax.firebaseapp.com",
+        projectId: "ghostsyntax",
+        databaseURL: "https://ghostsyntax-default-rtdb.asia-southeast1.firebasedatabase.app/",
+        storageBucket: "ghostsyntax.firebasestorage.app",
+        messagingSenderId: "810099288797",
+        appId: "1:810099288797:web:ab553b2077a11db7e40934",
+        measurementId: "G-WF7VJRL1W2"
+      };
+
+      // Initialize Firebase
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+      const messagesRef = ref(db, 'messages');
+
+      // Chat Functionality
+      class HackerChat {
+        constructor() {
+          this.chatArea = document.getElementById('chatArea');
+          this.messageInput = document.getElementById('messageInput');
+          this.sendBtn = document.getElementById('sendBtn');
+          this.timestamp = document.getElementById('timestamp');
+          this.userId = 'user_' + Math.random().toString(36).substr(2, 9);
+
+          this.setupEventListeners();
+          this.updateTimestamp();
+          setInterval(() => this.updateTimestamp(), 1000);
+
+          this.listenForMessages();
+        }
+
+        setupEventListeners() {
+          this.sendBtn.addEventListener('click', () => this.sendMessage());
+          this.messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+              this.sendMessage();
+            }
+          });
+        }
+
+        sendMessage() {
+          const messageText = this.messageInput.value.trim();
+          if (!messageText) return;
+
+          const newMessageRef = push(messagesRef);
+          set(newMessageRef, {
+            content: messageText,
+            sender: this.userId,
+            timestamp: serverTimestamp()
+          });
+
+          this.messageInput.value = '';
+        }
+
+        addMessage(msg) {
+            const type = msg.sender === this.userId ? 'sent' : 'received';
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+
+            const timeStr = new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            messageDiv.innerHTML = `
+                <div class="message-header">${type === 'sent' ? 'YOU' : 'ANONYMOUS'} [${timeStr}]</div>
+                <div class="message-content">${this.escapeHtml(msg.content)}</div>
+            `;
+            this.chatArea.appendChild(messageDiv);
+            this.scrollToBottom();
+        }
+
+
+        listenForMessages() {
+          onValue(messagesRef, (snapshot) => {
+            const initialMessages = this.chatArea.innerHTML === '' || this.chatArea.getElementsByClassName('message').length === 0;
+            this.chatArea.innerHTML = ''; // Clear existing messages to prevent duplication
+            
+            if (initialMessages) {
+                const initMsg = document.createElement('div');
+                initMsg.className = 'message received';
+                initMsg.innerHTML = `<div class="message-header">SYSTEM</div><div class="message-content">Welcome to GHOST SYNTAX. Connection established.</div>`;
+                this.chatArea.appendChild(initMsg);
+            }
+              
+            snapshot.forEach((childSnapshot) => {
+              const msg = childSnapshot.val();
+              this.addMessage(msg);
+            });
+          });
+        }
+
+        scrollToBottom() {
+          this.chatArea.scrollTop = this.chatArea.scrollHeight;
+        }
+
+        updateTimestamp() {
+          const now = new Date();
+          this.timestamp.textContent = now.toLocaleTimeString();
+        }
+
+        escapeHtml(text) {
+          const div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        }
+      }
+
+      // Matrix Rain Effect
+      function createMatrixRain() {
+            const matrixBg = document.getElementById('matrixBg');
+            const words = [
+                'ACCESS', 'GRANTED', 'ENCRYPTED', 'GHOST', 'SYNTAX', 'SECURE', 'TERMINAL', 'PROTOCOL', 'DATA', 'ACTIVE', 'GREEN', 'CONNECTED', 'AUTH', '0x1A2B', 'SYS:OK', 'RUNNING', 'SYNC', 'LOADING', 'READY', 'ONLINE', 'NO SIGNAL', 'ERROR', 'RETRY', 'COMPLETE', 'PROCESSING', 'UPLINK', 'DOWNLINK', 'NODE', 'GATEWAY', 'FIREWALL', 'TRACE', 'ANALYZE', 'OVERRIDE', 'SYSTEM', 'STATUS', 'CODE', 'PACKET', 'LINK', 'PORT', 'SCAN', 'PING', 'RESPONSE', 'INPUT', 'OUTPUT', 'BUFFER', 'STACK', 'QUEUE', 'THREAD', 'PROCESS', 'MEMORY', 'CACHE', 'ROUTER', 'SWITCH', 'BRIDGE', 'SERVER', 'CLIENT', 'HOST', 'DOMAIN', 'PROXY', 'VPN', 'SSH', 'TLS', 'SSL', 'HASH', 'KEY', 'TOKEN', 'SIGNAL', 'BINARY', 'HEX', 'DEC', 'OCT', 'ALERT', 'LOG', 'DEBUG', 'INFO', 'WARN', 'CRITICAL', 'FATAL', 'BOOT', 'SHUTDOWN', 'RESTART', 'UPDATE', 'INSTALL', 'REMOVE', 'CONFIG', 'SETUP', 'ADMIN', 'USER', 'GUEST', 'ROOT', 'SUDO', 'CMD', 'SHELL', 'CONSOLE', 'SCRIPT', 'EXEC', 'RUN', 'STOP', 'PAUSE', 'RESUME'
+            ];
+            for (let i = 0; i < 100; i++) {
+                const rain = document.createElement('div');
+                rain.className = 'matrix-rain';
+                rain.style.left = Math.random() * 100 + '%';
+                rain.style.animationDelay = Math.random() * 1.5 + 's';
+                rain.style.animationDuration = (Math.random() * 1.5 + 1.2) + 's';
+                rain.style.opacity = 0.3 + Math.random() * 0.4;
+                const word = words[Math.floor(Math.random() * words.length)];
+                rain.innerHTML = word;
+                matrixBg.appendChild(rain);
+            }
+        }
+        
+      // Intro overlay logic and chat initialization
+      window.addEventListener('DOMContentLoaded', () => {
+          const intro = document.getElementById('introOverlay');
+          setTimeout(() => {
+              intro.classList.add('fade-out');
+              setTimeout(() => {
+                  intro.style.display = 'none';
+                  createMatrixRain();
+                  new HackerChat();
+              }, 1000); // matches the CSS transition duration
+          }, 2500); // show intro for 2.5 seconds
+      });
+      
+    </script>
+</body>
+</html>
